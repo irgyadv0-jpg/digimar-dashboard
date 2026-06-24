@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DigiMar Pro — Performance Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F2F4FA;--surface:#fff;--s2:#EEF0F8;--s3:#E6E9F4;
+  --border:#E2E5F0;--border2:#C8CCDF;
+  --t1:#0D1321;--t2:#475569;--t3:#94A3B8;--t4:#CBD5E1;
+  --blue:#3B5BDB;--blue-l:#EDF2FF;--blue-d:#2C46C7;
+  --green:#0D9E6E;--green-l:#ECFDF5;--green-d:#065f46;
+  --red:#DC2626;--red-l:#FFF1F1;--red-d:#991B1B;
+  --amber:#D97706;--amber-l:#FFFBEB;--amber-d:#92400E;
+  --purple:#7C3AED;--purple-l:#F5F3FF;
+  --orange:#EA580C;--orange-l:#FFF7ED;
+  --mono:'JetBrains Mono',monospace;--sans:'Geist',-apple-system,BlinkMacSystemFont,sans-serif;
+  --r:10px;--r-sm:7px;--r-xs:5px;
+  --sh:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --sh-md:0 4px 16px rgba(0,0,0,.08);
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t1);font-size:14px;line-height:1.5;min-height:100vh}
+.app{display:flex;min-height:100vh}
+
+/* ── SIDEBAR ── */
+.sb{width:218px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;inset:0 auto 0 0;z-index:100}
+.sb-logo{display:flex;align-items:center;gap:9px;padding:16px 14px;border-bottom:1px solid var(--border)}
+.logo-box{width:30px;height:30px;border-radius:8px;background:var(--blue);display:flex;align-items:center;justify-content:center}
+.logo-box svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2}
+.logo-name{font-size:14px;font-weight:700;letter-spacing:-.3px}
+.logo-badge{font-size:9px;font-weight:700;background:var(--orange);color:#fff;padding:1px 5px;border-radius:4px;letter-spacing:.04em}
+.sb-nav{padding:8px 7px;flex:1;overflow-y:auto}
+.nav-sec{font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--t3);text-transform:uppercase;padding:10px 8px 4px}
+.nav-btn{display:flex;align-items:center;gap:8px;letter-spacing:-.15px;width:100%;padding:7px 9px;border:none;background:none;border-radius:var(--r-sm);font-family:var(--sans);font-size:12px;font-weight:500;color:var(--t2);cursor:pointer;transition:all .12s;text-align:left;margin-bottom:1px;position:relative}
+.nav-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;flex-shrink:0}
+.nav-btn:hover{background:var(--s2);color:var(--t1)}
+.nav-btn.active{background:var(--blue-l);color:var(--blue);font-weight:600}
+.nav-btn .alarm-dot{width:7px;height:7px;border-radius:50%;background:var(--red);margin-left:auto;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.sb-foot{padding:8px 7px;border-top:1px solid var(--border)}
+.user-row{display:flex;align-items:center;gap:8px;padding:7px 9px;background:var(--s2);border-radius:var(--r-sm)}
+.avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+
+/* ── MAIN ── */
+.main{margin-left:218px;flex:1;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;padding:0 20px;height:54px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;gap:10px}
+.tb-title{font-size:14px;font-weight:700;letter-spacing:-.3px}
+.tb-sub{font-size:11px;color:var(--t3);margin-top:1px}
+.tb-right{display:flex;align-items:center;gap:7px;margin-left:auto}
+
+/* ── DATE BAR ── */
+.datebar{display:flex;align-items:center;gap:6px;padding:8px 20px;background:var(--surface);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.preset-wrap{display:flex;gap:2px;background:var(--s2);border-radius:var(--r-sm);padding:2px}
+.preset{padding:4px 11px;border-radius:5px;border:none;font-family:var(--sans);font-size:11px;font-weight:500;color:var(--t2);background:none;cursor:pointer;transition:all .12s}
+.preset.active{background:var(--surface);color:var(--t1);box-shadow:var(--sh)}
+.date-sep{color:var(--t3);font-size:11px}
+.date-in{padding:4px 9px;border:1px solid var(--border2);border-radius:var(--r-sm);font-family:var(--sans);font-size:11px;color:var(--t1);background:var(--surface);outline:none}
+.date-in:focus{border-color:var(--blue)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--r-sm);border:1px solid var(--border2);background:var(--surface);color:var(--t1);font-family:var(--sans);font-size:12px;font-weight:500;cursor:pointer;transition:all .12s}
+.btn:hover{background:var(--s2)}.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.8}
+.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn-primary:hover{background:var(--blue-d);border-color:var(--blue-d)}
+.btn-sm{padding:4px 9px;font-size:11px}
+.btn-red{background:var(--red-l);color:var(--red);border-color:#FECACA}
+.btn-green{background:var(--green-l);color:var(--green-d);border-color:#A7F3D0}
+
+/* ── CONTENT ── */
+.content{padding:16px 20px 32px}
+.page{display:none}.page.active{display:block}
+
+/* ── ALARM BANNER ── */
+.alarm-strip{margin-bottom:14px;display:flex;flex-direction:column;gap:6px}
+.alarm-item{display:flex;align-items:center;gap:10px;padding:9px 13px;border-radius:var(--r-sm);font-size:12px;font-weight:500;border:1px solid}
+.alarm-item svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
+.alarm-item.red{background:var(--red-l);color:var(--red-d);border-color:#FECACA}
+.alarm-item.amber{background:var(--amber-l);color:var(--amber-d);border-color:#FDE68A}
+.alarm-item.green{background:var(--green-l);color:var(--green-d);border-color:#A7F3D0}
+.alarm-item.blue{background:var(--blue-l);color:#1e40af;border-color:#BFDBFE}
+.alarm-dismiss{margin-left:auto;background:none;border:none;cursor:pointer;color:inherit;opacity:.6;font-size:16px;line-height:1;padding:0 2px}
+.alarm-dismiss:hover{opacity:1}
+
+/* ── KPI ── */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-bottom:12px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px 14px;position:relative;overflow:hidden;box-shadow:var(--sh)}
+.kpi-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px}
+.kpi-icon{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center}
+.kpi-icon svg{width:15px;height:15px;stroke-width:1.8;fill:none}
+.kpi-alarm{font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px}
+.kpi-label{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.kpi-val{font-size:18px;font-weight:700;letter-spacing:-.4px;line-height:1.2}
+.kpi-sub{font-size:10px;color:var(--t3);margin-top:3px}
+.kpi-bar{position:absolute;bottom:0;left:0;right:0;height:3px}
+.kpi.alarm-red{border-color:#FECACA;background:var(--red-l)}
+.kpi.alarm-amber{border-color:#FDE68A;background:var(--amber-l)}
+
+/* ── GRID ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+.g21{display:grid;grid-template-columns:1.5fr 1fr;gap:12px;margin-bottom:12px}
+.g12{display:grid;grid-template-columns:1fr 1.5fr;gap:12px;margin-bottom:12px}
+
+/* ── CARD ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh)}
+.card-head{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--border)}
+.card-title{font-size:12px;font-weight:700;color:var(--t1)}
+.card-sub{font-size:10px;color:var(--t3);margin-top:1px}
+.link-btn{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:500;color:var(--blue);background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:5px}
+.link-btn:hover{background:var(--blue-l)}
+
+/* ── CHANNEL TABLE ── */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{text-align:left;font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--s2);white-space:nowrap}
+.tbl td{padding:9px 12px;font-size:12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tbody tr:hover td{background:var(--s2)}
+.mono{font-family:var(--mono);font-size:11px}
+.green{color:var(--green)}.red{color:var(--red)}.amber{color:var(--amber)}.dim{color:var(--t3)}
+.ch-name{display:flex;align-items:center;gap:7px;font-weight:600;font-size:12px}
+.ch-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* ── STATUS PILLS ── */
+.pill{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px}
+.pill-green{background:var(--green-l);color:var(--green-d)}
+.pill-red{background:var(--red-l);color:var(--red-d)}
+.pill-amber{background:var(--amber-l);color:var(--amber-d)}
+.pill-blue{background:var(--blue-l);color:#1e40af}
+.pill-gray{background:var(--s2);color:var(--t2)}
+
+/* ── ALARM INDICATOR ── */
+.alarm-cell{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600}
+.alarm-cell.ok{color:var(--green)}
+.alarm-cell.warn{color:var(--amber)}
+.alarm-cell.bad{color:var(--red)}
+
+/* ── P&L ── */
+.pnl-row{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px}
+.pnl-row:last-child{border-bottom:none}
+.pnl-row.grand{background:var(--s2);padding:10px 14px}
+.pnl-left{display:flex;align-items:center;gap:6px;color:var(--t2)}
+.pnl-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.pnl-right{display:flex;gap:10px;align-items:center}
+.pnl-pct{font-size:10px;color:var(--t3);font-family:var(--mono);min-width:36px;text-align:right}
+.pnl-amt{font-family:var(--mono);font-size:11px;font-weight:500;min-width:100px;text-align:right}
+.pnl-amt.neg{color:var(--red)}.pnl-amt.pos{color:var(--green);font-weight:700}.pnl-amt.lose{color:var(--red);font-weight:700}
+.pnl-bold{font-weight:700;color:var(--t1)}
+
+/* ── COST BAR ── */
+.cbar-wrap{padding:11px 14px}
+.cbar{margin-bottom:10px}.cbar:last-child{margin-bottom:0}
+.cbar-head{display:flex;justify-content:space-between;margin-bottom:4px}
+.cbar-name{font-size:11px;color:var(--t2);font-weight:500}
+.cbar-pct{font-size:11px;font-family:var(--mono);font-weight:600}
+.bar-track{height:5px;background:var(--s2);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+
+/* ── SKU MANAGER ── */
+.sku-item{display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:12px}
+.sku-item:last-child{border-bottom:none}
+.sku-name{flex:1;font-weight:500;color:var(--t1)}
+.sku-type{font-size:10px;color:var(--t3)}
+.mini-input{width:90px;background:var(--s2);border:1px solid var(--border);border-radius:5px;padding:4px 7px;font-family:var(--mono);font-size:11px;color:var(--t1);text-align:right;outline:none}
+.mini-input:focus{border-color:var(--blue);background:var(--surface)}
+.add-row-btn{display:flex;align-items:center;gap:5px;width:100%;padding:9px 14px;background:none;border:none;border-top:1px solid var(--border);font-family:var(--sans);font-size:11px;font-weight:500;color:var(--blue);cursor:pointer}
+.add-row-btn:hover{background:var(--blue-l)}
+
+/* ── SOSCOM SECTION ── */
+.soscom-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 14px;border-bottom:1px solid var(--border)}
+.sc-kpi{text-align:center;padding:8px}
+.sc-kpi-val{font-size:18px;font-weight:700;font-family:var(--mono)}
+.sc-kpi-label{font-size:10px;color:var(--t3);margin-top:3px;font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+.funnel{display:flex;align-items:center;gap:0;padding:12px 14px}
+.funnel-step{flex:1;text-align:center;padding:10px 6px;position:relative}
+.funnel-step::after{content:'→';position:absolute;right:-8px;top:50%;transform:translateY(-50%);color:var(--t3);font-size:14px}
+.funnel-step:last-child::after{display:none}
+.funnel-num{font-size:16px;font-weight:700;font-family:var(--mono)}
+.funnel-label{font-size:10px;color:var(--t3);margin-top:3px}
+.funnel-rate{font-size:10px;font-weight:600;margin-top:2px}
+
+/* ── FB ACCOUNTS ── */
+.fb-account-row{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:12px}
+.fb-account-row:last-child{border-bottom:none}
+.fb-acc-name{flex:1;font-weight:500}
+.fb-acc-type{font-size:10px;padding:2px 6px;border-radius:10px;font-weight:600}
+.type-cpas{background:#DBEAFE;color:#1e40af}
+.type-soscom{background:#EDE9FE;color:#5B21B6}
+
+/* ── CHART ── */
+.chart-wrap{padding:12px 14px}
+.leg{display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--t2)}
+.leg-dot{width:8px;height:8px;border-radius:50%}
+
+/* ── FORM ── */
+.form-body{padding:14px 16px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.frow-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px}
+.flabel{font-size:10px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.finput{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r-sm);padding:7px 10px;font-family:var(--sans);font-size:12px;color:var(--t1);outline:none;transition:border .12s}
+.finput:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,91,246,.08)}
+.fnote{padding:8px 11px;background:var(--blue-l);border-radius:var(--r-sm);font-size:11px;color:#1e40af;margin-bottom:10px}
+.factions{display:flex;gap:8px;margin-top:12px}
+
+/* ── MODAL ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.4);z-index:200;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;width:480px;max-width:90vw;overflow:hidden;box-shadow:var(--sh-md)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border)}
+.modal-title{font-size:13px;font-weight:700}
+.modal-close{background:none;border:none;color:var(--t3);cursor:pointer;font-size:20px;line-height:1}
+.modal-close:hover{color:var(--t1)}
+.modal-body{padding:14px 16px}
+.modal-foot{display:flex;gap:8px;justify-content:flex-end;padding:11px 16px;border-top:1px solid var(--border)}
+
+/* ── TOAST ── */
+.toast-wrap{position:fixed;bottom:16px;right:16px;z-index:300;display:flex;flex-direction:column;gap:6px}
+.toast{display:flex;align-items:center;gap:8px;background:var(--t1);color:#fff;border-radius:var(--r-sm);padding:9px 13px;font-size:12px;font-weight:500;animation:tIn .18s ease;max-width:300px;box-shadow:var(--sh-md)}
+.toast.ok{background:#065f46}.toast.fail{background:#991B1B}.toast.warn{background:#92400E}
+@keyframes tIn{from{transform:translateX(16px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ── SUM ROW ── */
+.sum-row{display:flex;gap:10px;padding:9px 14px;background:var(--s2);border-top:1px solid var(--border);font-size:11px;font-weight:600;flex-wrap:wrap}
+.sum-item{display:flex;gap:4px}.sum-label{color:var(--t3);font-weight:400}
+
+/* ── INTEGRATION STATUS ── */
+.int-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--border)}
+.int-row:last-child{border-bottom:none}
+.int-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.int-name{font-size:12px;font-weight:600}
+.int-sub{font-size:10px;color:var(--t3);margin-top:1px}
+.conn-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600}
+.conn-on{background:var(--green-l);color:var(--green-d)}
+.conn-off{background:var(--s2);color:var(--t3)}
+.conn-dot{width:6px;height:6px;border-radius:50%}
+
+/* ── SETTINGS ── */
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border)}
+.setting-row:last-child{border-bottom:none}
+.setting-label{font-size:12px;font-weight:500}
+.setting-sub{font-size:10px;color:var(--t3);margin-top:2px}
+.setting-val{display:flex;align-items:center;gap:8px}
+.threshold-input{width:110px;background:var(--s2);border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-family:var(--mono);font-size:12px;color:var(--t1);text-align:right;outline:none}
+.threshold-input:focus{border-color:var(--blue);background:var(--surface)}
+
+@media(max-width:900px){.sb{display:none}.main{margin-left:0}.kpi-row{grid-template-columns:repeat(2,1fr)}.g2,.g21,.g12,.g3{grid-template-columns:1fr}}
+
+/* ─── PREMIUM ADDITIONS ─── */
+/* Micro sparkline */
+.k-spark{position:absolute;bottom:0;left:0;right:0;height:36px;opacity:.15;pointer-events:none}
+.k-line{position:absolute;bottom:0;left:0;right:0;height:2px}
+
+/* Number rendering */
+.kpi-val,.mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+
+/* Sidebar glow on active */
+.nav-btn.active::before{content:'';position:absolute;left:0;top:15%;bottom:15%;width:2px;border-radius:2px;background:var(--blue)}
+
+/* Section divider */
+.sec-label{font-size:9px;font-weight:600;letter-spacing:.12em;color:var(--t3);text-transform:uppercase;padding:12px 0 8px}
+
+/* Card hover glow */
+.kpi-card:hover{border-color:rgba(255,255,255,.1)}
+
+/* Table mono */
+.tbl td.num{font-family:var(--mono);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* Better scrollbar */
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px}
+
+/* Smooth transitions */
+.page.active{animation:pageIn .12s ease}
+@keyframes pageIn{from{opacity:.7;transform:translateY(2px)}to{opacity:1;transform:translateY(0)}}
+
+/* Better empty state */
+.empty-state{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;padding:32px;color:var(--t3)}
+.empty-state svg{opacity:.3;margin-bottom:4px}
+
+/* Funnel rate chip */
+.fn-rate-chip{display:inline-block;font-size:8px;font-weight:600;padding:1px 5px;border-radius:10px;background:rgba(255,255,255,.07);margin-top:3px}
+
+/* Better alarm */
+.alarm-item{font-size:11.5px}
+
+/* Chart tooltip */
+.chartjs-tooltip{font-family:'Geist Mono',monospace !important}
+
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ══ SIDEBAR ══ -->
+<aside class="sb">
+  <div class="sb-logo">
+    <div class="logo-box"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+    <div><div class="logo-name">DigiMar</div></div>
+    <div class="logo-badge">PRO</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="nav-sec">Overview</div>
+    <button class="nav-btn active" onclick="goPage('overview',this)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard <span class="alarm-dot" id="alarmDot" style="display:none"></span>
+    </button>
+    <div class="nav-sec">Channel</div>
+    <button class="nav-btn" onclick="goPage('marketplace',this)">
+      <svg viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      Marketplace
+    </button>
+    <button class="nav-btn" onclick="goPage('soscom',this)">
+      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Soscom / Prospek
+    </button>
+    <button class="nav-btn" onclick="goPage('ads',this)">
+      <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      Spend Iklan
+    </button>
+    <div class="nav-sec">Data & Produk</div>
+    <button class="nav-btn" onclick="goPage('sku',this)">
+      <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      Produk & SKU
+    </button>
+    <button class="nav-btn" onclick="goPage('input',this)">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Input Data
+    </button>
+    <div class="nav-sec">Sistem</div>
+    <button class="nav-btn" onclick="goPage('alarms',this)">
+      <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      Alarm & Target
+    </button>
+    <button class="nav-btn" onclick="goPage('integrations',this)">
+      <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      Integrasi
+    </button>
+  </nav>
+  <div class="sb-foot">
+    <div class="user-row">
+      <div class="avatar">OW</div>
+      <div><div style="font-size:11px;font-weight:600">Owner</div><div style="font-size:10px;color:var(--t3)">Admin</div></div>
+    </div>
+  </div>
+</aside>
+
+<!-- ══ MAIN ══ -->
+<main class="main">
+  <div class="topbar">
+    <div><div class="tb-title" id="pageTitle">Dashboard Overview</div><div class="tb-sub" id="pageSub"></div></div>
+    <div class="tb-right">
+      <span id="shopee-badge" style="font-size:10px;padding:3px 9px;border-radius:20px;background:var(--s2);color:var(--t3);cursor:pointer" onclick="connectShopee()">+ Hubungkan Shopee</span>
+      <button id="sync-btn" class="btn btn-sm" onclick="syncAll()">
+        <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Sync
+      </button>
+      <button class="btn btn-primary btn-sm" onclick="goPage('input',document.querySelectorAll('.nav-btn')[6])">+ Input</button>
+    </div>
+  </div>
+
+  <!-- DATE BAR -->
+  <div class="datebar">
+    <div class="preset-wrap">
+      <button class="preset active" onclick="setPreset('today',this)">Hari ini</button>
+      <button class="preset" onclick="setPreset('7d',this)">7 Hari</button>
+      <button class="preset" onclick="setPreset('30d',this)">30 Hari</button>
+      <button class="preset" onclick="setPreset('month',this)">Bulan ini</button>
+      <button class="preset" onclick="setPreset('custom',this)">Custom</button>
+    </div>
+    <div id="customRow" style="display:none;align-items:center;gap:5px">
+      <input type="date" class="date-in" id="dateFrom">
+      <span class="date-sep">→</span>
+      <input type="date" class="date-in" id="dateTo">
+      <button class="btn btn-sm" onclick="applyCustom()">Terapkan</button>
+    </div>
+    <div style="margin-left:auto;font-size:10px;color:var(--t3)" id="rangeLabel"></div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ OVERVIEW ══ -->
+    <div class="page active" id="page-overview">
+      <div class="alarm-strip" id="alarmStrip"></div>
+      <div class="kpi-row">
+        <div class="kpi" id="kpi-orders">
+          <div class="kpi-top"><div class="kpi-icon" style="background:var(--blue-l)"><svg viewBox="0 0 24 24" style="stroke:var(--blue)"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg></div></div>
+          <div class="kpi-label">Total Order</div><div class="kpi-val" id="kv-orders">—</div><div class="kpi-sub" id="ks-orders">Semua channel</div>
+          <div class="kpi-bar" style="background:var(--blue)"></div>
+        </div>
+        <div class="kpi" id="kpi-gmv">
+          <div class="kpi-top"><div class="kpi-icon" style="background:var(--orange-l)"><svg viewBox="0 0 24 24" style="stroke:var(--orange)"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div></div>
+          <div class="kpi-label">Total GMV</div><div class="kpi-val" id="kv-gmv">—</div><div class="kpi-sub" id="ks-gmv">Omset kotor</div>
+          <div class="kpi-bar" style="background:var(--orange)"></div>
+        </div>
+        <div class="kpi" id="kpi-spend">
+          <div class="kpi-top"><div class="kpi-icon" style="background:var(--purple-l)"><svg viewBox="0 0 24 24" style="stroke:var(--purple)"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div></div>
+          <div class="kpi-label">Total Spend Iklan</div><div class="kpi-val" id="kv-spend">—</div><div class="kpi-sub" id="ks-spend">Semua channel</div>
+          <div class="kpi-bar" style="background:var(--purple)"></div>
+        </div>
+        <div class="kpi" id="kpi-profit">
+          <div class="kpi-top"><div class="kpi-icon" id="profit-icon" style="background:var(--green-l)"><svg viewBox="0 0 24 24" style="stroke:var(--green)"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/></svg></div></div>
+          <div class="kpi-label">Net Profit</div><div class="kpi-val" id="kv-profit">—</div><div class="kpi-sub" id="ks-profit">Setelah semua biaya</div>
+          <div class="kpi-bar" id="profit-bar" style="background:var(--green)"></div>
+        </div>
+        <div class="kpi" id="kpi-laba-unit">
+          <div class="kpi-top"><div class="kpi-icon" id="lu-icon" style="background:var(--green-l)"><svg viewBox="0 0 24 24" style="stroke:var(--green)"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
+          <span class="kpi-alarm" id="lu-alarm" style="display:none"></span></div>
+          <div class="kpi-label">Laba / Order</div><div class="kpi-val" id="kv-lu">—</div><div class="kpi-sub">Target: <span id="lu-target">Rp 20.000</span></div>
+          <div class="kpi-bar" id="lu-bar" style="background:var(--green)"></div>
+        </div>
+      </div>
+
+      <div class="g21">
+        <div class="card">
+          <div class="card-head"><div><div class="card-title">Tren Harian</div><div class="card-sub">GMV · Profit · Spend Iklan</div></div></div>
+          <div class="chart-wrap">
+            <div class="leg"><div class="leg-item"><div class="leg-dot" style="background:var(--orange)"></div>GMV</div><div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div>Profit</div><div class="leg-item"><div class="leg-dot" style="background:var(--purple)"></div>Spend</div></div>
+            <canvas id="trendChart" height="180"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><div class="card-title">P&L Global</div><div class="card-sub">Semua channel & produk</div></div></div>
+          <div id="ovPnl"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><div class="card-title">Performa Per Channel</div><div class="card-sub">GMV · Spend · ROAS · Laba/Order · Alarm</div></div></div>
+        <div style="overflow-x:auto">
+          <table class="tbl">
+            <thead><tr><th>Channel</th><th>Tipe</th><th>Order</th><th>GMV</th><th>Spend</th><th>ROAS</th><th>Laba/Order</th><th>Net Profit</th><th>Margin</th><th>Alarm</th></tr></thead>
+            <tbody id="ovChannelBody"></tbody>
+          </table>
+        </div>
+        <div class="sum-row" id="ovSum"></div>
+      </div>
+    </div>
+
+    <!-- ══ MARKETPLACE ══ -->
+    <div class="page" id="page-marketplace">
+      <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+        <div class="kpi"><div class="kpi-label">Order Marketplace</div><div class="kpi-val" id="mp-orders">—</div><div class="kpi-sub">Shopee + TikTok Shop</div><div class="kpi-bar" style="background:var(--blue)"></div></div>
+        <div class="kpi"><div class="kpi-label">GMV Marketplace</div><div class="kpi-val" id="mp-gmv">—</div><div class="kpi-sub" id="mp-gmv-sub">—</div><div class="kpi-bar" style="background:var(--orange)"></div></div>
+        <div class="kpi" id="mp-roas-kpi"><div class="kpi-label">Blended ROAS</div><div class="kpi-val" id="mp-roas">—</div><div class="kpi-sub">Target min 3x</div><div class="kpi-bar" id="mp-roas-bar" style="background:var(--green)"></div></div>
+        <div class="kpi"><div class="kpi-label">Shopee Ads Spend</div><div class="kpi-val" id="mp-spend">—</div><div class="kpi-sub" id="mp-spend-sub">—</div><div class="kpi-bar" style="background:var(--purple)"></div></div>
+      </div>
+      <div class="g2">
+        <div class="card">
+          <div class="card-head"><div><div class="card-title">Per Channel Marketplace</div></div></div>
+          <div style="overflow-x:auto">
+            <table class="tbl">
+              <thead><tr><th>Channel</th><th>Order</th><th>GMV</th><th>Spend Ads</th><th>ROAS</th><th>Net Profit</th><th>Status ROAS</th></tr></thead>
+              <tbody id="mpTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><div class="card-title">GMV Tren Marketplace</div></div></div>
+          <div class="chart-wrap"><canvas id="mpChart" height="240"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SOSCOM ══ -->
+    <div class="page" id="page-soscom">
+      <div class="kpi-row" style="grid-template-columns:repeat(5,1fr)">
+        <div class="kpi"><div class="kpi-label">Total Leads</div><div class="kpi-val" id="sc-leads">—</div><div class="kpi-sub">Prospek masuk</div><div class="kpi-bar" style="background:var(--blue)"></div></div>
+        <div class="kpi"><div class="kpi-label">Order Terkonfirmasi</div><div class="kpi-val" id="sc-orders">—</div><div class="kpi-sub" id="sc-cr-sub">Closing rate —%</div><div class="kpi-bar" style="background:var(--green)"></div></div>
+        <div class="kpi"><div class="kpi-label">GMV Soscom</div><div class="kpi-val" id="sc-gmv">—</div><div class="kpi-sub">Dari order terkonfirmasi</div><div class="kpi-bar" style="background:var(--orange)"></div></div>
+        <div class="kpi"><div class="kpi-label">Spend FB Soscom</div><div class="kpi-val" id="sc-spend">—</div><div class="kpi-sub" id="sc-cpl-sub">CPL: —</div><div class="kpi-bar" style="background:var(--purple)"></div></div>
+        <div class="kpi" id="sc-profit-kpi"><div class="kpi-label">Net Profit Soscom</div><div class="kpi-val" id="sc-profit">—</div><div class="kpi-sub" id="sc-margin-sub">Margin —%</div><div class="kpi-bar" id="sc-profit-bar" style="background:var(--green)"></div></div>
+      </div>
+
+      <div class="g21">
+        <div class="card">
+          <div class="card-head"><div><div class="card-title">Funnel Soscom</div><div class="card-sub">Leads → Konfirmasi → Kirim → Selesai</div></div></div>
+          <div class="funnel" id="scFunnel"></div>
+          <div style="border-top:1px solid var(--border);padding:11px 14px">
+            <div class="card-title" style="margin-bottom:8px;font-size:11px">Per Akun FB Ads (Soscom)</div>
+            <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Akun</th><th>Spend</th><th>Leads</th><th>CPL</th><th>Order</th><th>Closing %</th><th>Profit</th></tr></thead><tbody id="scAccBody"></tbody></table></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><div class="card-title">P&L Soscom</div><div class="card-sub">Termasuk biaya per lead</div></div></div>
+          <div id="scPnl"></div>
+          <div class="cbar-wrap" id="scBars"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ADS ══ -->
+    <div class="page" id="page-ads">
+      <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+        <div class="kpi"><div class="kpi-label">Total Spend Semua</div><div class="kpi-val" id="ads-total">—</div><div class="kpi-sub" id="ads-pct-sub">—% dari GMV</div><div class="kpi-bar" style="background:var(--purple)"></div></div>
+        <div class="kpi"><div class="kpi-label">Shopee Ads</div><div class="kpi-val" id="ads-shopee">—</div><div class="kpi-sub" id="ads-shopee-roas">ROAS —</div><div class="kpi-bar" style="background:#EE4D2D"></div></div>
+        <div class="kpi"><div class="kpi-label">FB Ads CPAS</div><div class="kpi-val" id="ads-cpas">—</div><div class="kpi-sub" id="ads-cpas-roas">ROAS —</div><div class="kpi-bar" style="background:#1877F2"></div></div>
+        <div class="kpi"><div class="kpi-label">FB Ads Soscom</div><div class="kpi-val" id="ads-soscom">—</div><div class="kpi-sub" id="ads-soscom-cpl">CPL —</div><div class="kpi-bar" style="background:#7C3AED"></div></div>
+      </div>
+      <div class="g2">
+        <div class="card">
+          <div class="card-head"><div><div class="card-title">Akun FB Ads</div><div class="card-sub">Semua akun dalam Business Manager</div></div>
+          <button class="link-btn" onclick="openAddFbAcc()">+ Akun</button></div>
+          <div id="fbAccList"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><div class="card-title">Spend vs ROAS per Tipe</div></div></div>
+          <div class="chart-wrap"><canvas id="adsChart" height="260"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SKU MANAGER ══ -->
+    <div class="page" id="page-sku">
+      <div style="max-width:580px">
+        <div class="card" style="margin-bottom:12px">
+          <div class="card-head">
+            <div><div class="card-title">Produk & SKU</div><div class="card-sub">HPP per SKU — dipakai kalkulasi otomatis</div></div>
+            <button class="btn btn-primary btn-sm" onclick="openAddSku()">+ Tambah SKU</button>
+          </div>
+          <div id="skuList"></div>
+        </div>
+        <div class="alarm-item blue" style="margin-bottom:0">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          HPP per unit × jumlah order = total HPP. Bundle = jumlahkan HPP komponen. Harga jual dipakai hitung laba per order otomatis.
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ INPUT DATA ══ -->
+    <div class="page" id="page-input">
+      <div style="max-width:600px">
+        <div class="card" style="margin-bottom:12px">
+          <div class="card-head"><div><div class="card-title">Input Data Harian</div><div class="card-sub">Per channel, tersimpan otomatis</div></div></div>
+          <div class="form-body">
+            <div class="frow">
+              <div><div class="flabel">Tanggal</div><input type="date" class="finput" id="f-date"></div>
+              <div><div class="flabel">Channel</div>
+                <select class="finput" id="f-channel">
+                  <option value="Shopee">Shopee</option>
+                  <option value="TikTok Shop">TikTok Shop</option>
+                  <option value="FB CPAS">FB Ads — CPAS</option>
+                  <option value="FB Soscom">FB Ads — Soscom/Prospek</option>
+                  <option value="WhatsApp">WhatsApp Direct</option>
+                  <option value="Lainnya">Lainnya</option>
+                </select>
+              </div>
+            </div>
+            <div class="frow">
+              <div><div class="flabel">Jumlah Order</div><input type="number" class="finput" id="f-orders" placeholder="0"></div>
+              <div><div class="flabel">GMV / Omset (Rp)</div><input type="number" class="finput" id="f-gmv" placeholder="0"></div>
+            </div>
+            <div class="frow">
+              <div><div class="flabel">Spend Iklan (Rp)</div><input type="number" class="finput" id="f-spend" placeholder="0"></div>
+              <div><div class="flabel">Admin Marketplace (Rp)</div><input type="number" class="finput" id="f-admin" placeholder="0"></div>
+            </div>
+            <div id="soscomFields" style="display:none">
+              <div class="frow">
+                <div><div class="flabel">Leads / Prospek Masuk</div><input type="number" class="finput" id="f-leads" placeholder="0"></div>
+                <div><div class="flabel">Order Terkonfirmasi</div><input type="number" class="finput" id="f-confirmed" placeholder="0"></div>
+              </div>
+            </div>
+            <div><div class="flabel">Catatan</div><input type="text" class="finput" id="f-note" placeholder="Flash sale, campaign, promo, dll."></div>
+            <div class="fnote" style="margin-top:10px">HPP diambil dari rata-rata HPP SKU aktif. <button class="link-btn" style="padding:0;font-size:11px" onclick="goPage('sku',document.querySelectorAll('.nav-btn')[5])">Kelola SKU →</button></div>
+            <div class="factions">
+              <button class="btn btn-primary" onclick="saveEntry()" style="flex:1;justify-content:center">Simpan</button>
+              <button class="btn" onclick="resetForm()">Reset</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div class="card-title">Data Terakhir (20)</div><button class="btn btn-red btn-sm" onclick="clearAll()">Hapus Semua</button></div>
+          <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Tgl</th><th>Channel</th><th>Order</th><th>GMV</th><th>Spend</th><th>Laba/Order</th><th>Status</th><th></th></tr></thead><tbody id="histBody"></tbody></table></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ALARMS & TARGETS ══ -->
+    <div class="page" id="page-alarms">
+      <div style="max-width:540px;display:flex;flex-direction:column;gap:12px">
+        <div class="card">
+          <div class="card-head"><div><div class="card-title">Target & Batas Alarm</div><div class="card-sub">Ubah sesuai kondisi bisnis kamu</div></div>
+          <button class="btn btn-green btn-sm" onclick="saveTargets()">Simpan</button></div>
+          <div class="setting-row">
+            <div><div class="setting-label">Target Laba Minimum / Order</div><div class="setting-sub">Alarm merah kalau laba per order di bawah ini</div></div>
+            <div class="setting-val"><input class="threshold-input" id="t-laba-order" value="20000"><span style="font-size:11px;color:var(--t3)">Rp</span></div>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">Target ROAS Minimum — Marketplace</div><div class="setting-sub">Shopee Ads, TikTok Ads. Alarm merah kalau di bawah ini</div></div>
+            <div class="setting-val"><input class="threshold-input" id="t-roas-mp" value="3" style="width:70px"><span style="font-size:11px;color:var(--t3)">x</span></div>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">Target Net Margin Minimum — Marketplace</div><div class="setting-sub">Alarm kuning kalau margin turun di bawah ini</div></div>
+            <div class="setting-val"><input class="threshold-input" id="t-margin-mp" value="15" style="width:70px"><span style="font-size:11px;color:var(--t3)">%</span></div>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">Batas Spend Iklan Maksimal</div><div class="setting-sub">Alarm kalau total spend melebihi % dari GMV</div></div>
+            <div class="setting-val"><input class="threshold-input" id="t-spend-pct" value="30" style="width:70px"><span style="font-size:11px;color:var(--t3)">% GMV</span></div>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">Alert GMV Drop</div><div class="setting-sub">Alarm kalau GMV hari ini di bawah % dari rata-rata 7 hari</div></div>
+            <div class="setting-val"><input class="threshold-input" id="t-gmv-drop" value="50" style="width:70px"><span style="font-size:11px;color:var(--t3)">%</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div><div class="card-title">Alarm Aktif Saat Ini</div><div class="card-sub">Berdasarkan data periode yang dipilih</div></div></div>
+          <div id="activeAlarmList" style="padding:12px 14px;font-size:12px;color:var(--t3)">Tidak ada alarm aktif.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ INTEGRATIONS ══ -->
+    <div class="page" id="page-integrations">
+      <div style="max-width:520px">
+        <div class="card" style="margin-bottom:12px">
+          <div class="card-head"><div class="card-title">Status Integrasi Platform</div></div>
+          <div class="int-row">
+            <div class="int-icon" style="background:#FEF0ED">🛍</div>
+            <div><div class="int-name">Shopee Seller Center</div><div class="int-sub">Order & GMV via Shopee Open Platform API</div></div>
+            <div style="margin-left:auto" id="int-shopee"><div class="conn-pill conn-off"><div class="conn-dot" style="background:var(--t3)"></div>Belum terhubung</div></div>
+          </div>
+          <div class="int-row">
+            <div class="int-icon" style="background:#EEF5FF">📘</div>
+            <div><div class="int-name">Facebook / Meta Ads</div><div class="int-sub">CPAS + Soscom via Meta Business API — 1 BM semua akun</div></div>
+            <div style="margin-left:auto"><button class="btn btn-primary btn-sm" onclick="toast('Segera hadir setelah Shopee API aktif','warn')">Hubungkan BM</button></div>
+          </div>
+          <div class="int-row">
+            <div class="int-icon" style="background:#F0F0F0">🎵</div>
+            <div><div class="int-name">TikTok Shop + TikTok Ads</div><div class="int-sub">Roadmap — segera hadir</div></div>
+            <div style="margin-left:auto"><div class="conn-pill conn-off"><div class="conn-dot" style="background:var(--t3)"></div>Roadmap</div></div>
+          </div>
+          <div class="int-row">
+            <div class="int-icon" style="background:#F0FAFA">📦</div>
+            <div><div class="int-name">OrderOnline.id</div><div class="int-sub">Order Soscom — menunggu API key dari developer</div></div>
+            <div style="margin-left:auto"><div class="conn-pill conn-off"><div class="conn-dot" style="background:var(--amber)"></div>Menunggu API</div></div>
+          </div>
+        </div>
+        <div class="alarm-item blue">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Integrasi Shopee aktif setelah Partner ID & Key diset di environment variables Vercel. FB Ads & OrderOnline menyusul.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+</div>
+
+<!-- MODAL SKU -->
+<div class="modal-bg" id="skuModal">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title" id="skuModalTitle">Tambah SKU</div><button class="modal-close" onclick="closeModal('skuModal')">×</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="sku-edit-id">
+      <div class="frow">
+        <div><div class="flabel">Nama SKU / Produk</div><input type="text" class="finput" id="sku-name" placeholder="mis. Bundle 2+1, Single Pack"></div>
+        <div><div class="flabel">Tipe</div>
+          <select class="finput" id="sku-type">
+            <option value="single">Single</option>
+            <option value="bundle">Bundle</option>
+            <option value="variant">Variant</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div><div class="flabel">HPP per Unit (Rp)</div><input type="number" class="finput" id="sku-hpp" placeholder="0"></div>
+        <div><div class="flabel">Harga Jual Normal (Rp)</div><input type="number" class="finput" id="sku-price" placeholder="0"></div>
+      </div>
+      <div><div class="flabel">Catatan / Komposisi Bundle</div><input type="text" class="finput" id="sku-note" placeholder="mis. 2 pcs produk A + 1 pcs produk B"></div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('skuModal')">Batal</button><button class="btn btn-primary" onclick="saveSku()">Simpan</button></div>
+  </div>
+</div>
+
+<!-- MODAL FB ACCOUNT -->
+<div class="modal-bg" id="fbModal">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Tambah Akun FB Ads</div><button class="modal-close" onclick="closeModal('fbModal')">×</button></div>
+    <div class="modal-body">
+      <div class="frow">
+        <div><div class="flabel">Nama Akun</div><input type="text" class="finput" id="fb-name" placeholder="mis. Akun CPAS Main"></div>
+        <div><div class="flabel">Tipe</div>
+          <select class="finput" id="fb-type">
+            <option value="cpas">CPAS (Marketplace)</option>
+            <option value="soscom">Soscom / Prospek</option>
+          </select>
+        </div>
+      </div>
+      <div><div class="flabel">Ad Account ID (opsional)</div><input type="text" class="finput" id="fb-id" placeholder="act_xxxxxxxxx"></div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('fbModal')">Batal</button><button class="btn btn-primary" onclick="saveFbAcc()">Simpan</button></div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+// ═══ STORAGE ═══
+const LS={e:'dmp_entries',s:'dmp_skus',f:'dmp_fbaccs',t:'dmp_targets'};
+const load=(k,f)=>{try{const d=localStorage.getItem(k);return d?JSON.parse(d):f}catch{return f}};
+const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
+
+const CH_MARKETPLACE = ['Shopee','TikTok Shop'];
+const CH_SOSCOM      = ['FB Soscom','WhatsApp'];
+const CH_ADS_ONLY    = ['FB CPAS'];
+const CH_INFO = {
+  'Shopee':      {color:'#EE4D2D',bg:'#FEF0ED',emoji:'🛍',tipe:'Marketplace'},
+  'TikTok Shop': {color:'#000',   bg:'#F0F0F0',emoji:'🎵',tipe:'Marketplace'},
+  'FB CPAS':     {color:'#1877F2',bg:'#EEF5FF',emoji:'📘',tipe:'FB CPAS'},
+  'FB Soscom':   {color:'#7C3AED',bg:'#F5F3FF',emoji:'📣',tipe:'Soscom'},
+  'WhatsApp':    {color:'#25D366',bg:'#F0FDF4',emoji:'💬',tipe:'Soscom'},
+  'Lainnya':     {color:'#94A3B8',bg:'#F1F5F9',emoji:'📦',tipe:'Lainnya'},
+};
+const ci=k=>CH_INFO[k]||{color:'#94A3B8',bg:'#F1F5F9',emoji:'📦',tipe:'Lainnya'};
+
+let entries = load(LS.e,[]);
+let skus    = load(LS.s,[
+  {id:uid(),name:'Single Pack',  type:'single',hpp:45000,price:89000,note:''},
+  {id:uid(),name:'Bundle 2+1',   type:'bundle',hpp:90000,price:159000,note:'2 Single + 1 bonus'},
+  {id:uid(),name:'Bundle 3+2',   type:'bundle',hpp:135000,price:229000,note:'3 Single + 2 bonus'},
+]);
+let fbAccs  = load(LS.f,[
+  {id:uid(),name:'Akun CPAS Utama',  type:'cpas',  accId:''},
+  {id:uid(),name:'Akun Soscom 1',    type:'soscom', accId:''},
+]);
+let targets = load(LS.t,{labaOrder:20000,roasMp:3,marginMp:15,spendPct:30,gmvDrop:50});
+let dfrom=null,dto=null,preset='today';
+let charts={};
+
+function uid(){return Math.random().toString(36).slice(2,10)}
+
+// ═══ DATE ═══
+function setPreset(p,btn){
+  preset=p;
+  document.querySelectorAll('.preset').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  const cr=document.getElementById('customRow');
+  if(p==='custom'){cr.style.display='flex';return}
+  cr.style.display='none';
+  const now=new Date(),y=now.getFullYear(),m=now.getMonth(),d=now.getDate();
+  if(p==='today'){dfrom=dto=new Date(y,m,d)}
+  else if(p==='7d'){dfrom=new Date(y,m,d-6);dto=new Date(y,m,d)}
+  else if(p==='30d'){dfrom=new Date(y,m,d-29);dto=new Date(y,m,d)}
+  else if(p==='month'){dfrom=new Date(y,m,1);dto=new Date(y,m,d)}
+  updateRangeLabel();renderAll();
+}
+function applyCustom(){
+  const f=document.getElementById('dateFrom').value,t=document.getElementById('dateTo').value;
+  if(!f||!t){toast('Pilih kedua tanggal','fail');return}
+  dfrom=new Date(f);dto=new Date(t);updateRangeLabel();renderAll();
+}
+function updateRangeLabel(){
+  const fmt=d=>d?d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}):'—';
+  const el=document.getElementById('rangeLabel');
+  if(!el)return;
+  el.textContent=dfrom&&dto&&dfrom.getTime()!==dto.getTime()?`${fmt(dfrom)} — ${fmt(dto)}`:dfrom?fmt(dfrom):'';
+}
+function inRange(ds){
+  if(!dfrom)return true;
+  const d=new Date(ds);
+  const df=new Date(dfrom);df.setHours(0,0,0,0);
+  const dt=new Date(dto||dfrom);dt.setHours(23,59,59,999);
+  return d>=df&&d<=dt;
+}
+function filtered(){return entries.filter(e=>inRange(e.date))}
+
+// ═══ AVG HPP ═══
+function avgHpp(){
+  if(!skus.length)return 0;
+  return Math.round(skus.reduce((a,s)=>a+s.hpp,0)/skus.length);
+}
+
+// ═══ CALC ═══
+function calcEntry(e){
+  const gmv=e.gmv||0,orders=e.orders||0,spend=e.spend||0,admin=e.admin||0;
+  const hpp=avgHpp()*orders;
+  const cogsX=0;
+  const totalCost=hpp+spend+admin+cogsX;
+  const netProfit=gmv-totalCost;
+  const grossProfit=gmv-hpp;
+  const netMargin=gmv>0?netProfit/gmv*100:0;
+  const grossMargin=gmv>0?grossProfit/gmv*100:0;
+  const roas=spend>0?gmv/spend:0;
+  const labaPerOrder=orders>0?netProfit/orders:0;
+  const cpl=orders>0?spend/orders:0;
+  const leads=e.leads||0;
+  const closingRate=leads>0?(orders/leads*100):0;
+  const cplLead=leads>0?spend/leads:0;
+  return {gmv,orders,spend,admin,hpp,cogsX,totalCost,netProfit,grossProfit,netMargin,grossMargin,roas,labaPerOrder,cpl,leads,closingRate,cplLead};
+}
+function agg(list){
+  let gmv=0,orders=0,spend=0,admin=0,hpp=0,leads=0,confirmed=0;
+  list.forEach(e=>{const c=calcEntry(e);gmv+=c.gmv;orders+=c.orders;spend+=c.spend;admin+=c.admin;hpp+=c.hpp;leads+=c.leads;confirmed+=e.confirmed||0});
+  const totalCost=hpp+spend+admin;
+  const netProfit=gmv-totalCost;
+  const grossProfit=gmv-hpp;
+  const netMargin=gmv>0?netProfit/gmv*100:0;
+  const grossMargin=gmv>0?grossProfit/gmv*100:0;
+  const roas=spend>0?gmv/spend:0;
+  const labaPerOrder=orders>0?netProfit/orders:0;
+  const cplLead=leads>0?spend/leads:0;
+  const closingRate=leads>0?confirmed/leads*100:0;
+  return {gmv,orders,spend,admin,hpp,totalCost,netProfit,grossProfit,netMargin,grossMargin,roas,labaPerOrder,leads,closingRate,cplLead};
+}
+function byChannel(list){
+  const map={};
+  list.forEach(e=>{const ch=e.channel||'Lainnya';if(!map[ch])map[ch]=[];map[ch].push(e)});
+  return Object.entries(map).map(([ch,rows])=>({ch,data:agg(rows)})).sort((a,b)=>b.data.gmv-a.data.gmv);
+}
+
+// ═══ FORMAT ═══
+function fRp(n){const abs=Math.abs(n);if(abs>=1e9)return(n<0?'-':'')+'Rp '+(abs/1e9).toFixed(1)+'M';if(abs>=1e6)return(n<0?'-':'')+'Rp '+(abs/1e6).toFixed(1)+' Jt';if(abs>=1e3)return(n<0?'-':'')+'Rp '+Math.round(abs).toLocaleString('id-ID');return(n<0?'-':'')+'Rp '+Math.round(abs)}
+function fPct(n){return(isFinite(n)?n.toFixed(1):0)+'%'}
+function fNum(n){return Math.round(n).toLocaleString('id-ID')}
+function fROAS(n){return isFinite(n)&&n>0?n.toFixed(2)+'x':'—'}
+function fK(n){return Math.abs(n)>=1e6?(n/1e6).toFixed(1)+'Jt':Math.abs(n)>=1e3?(n/1e3).toFixed(0)+'rb':Math.round(n).toString()}
+
+// ═══ ALARM CHECK ═══
+function checkAlarms(total,channels){
+  const alarms=[];
+  // Laba per order
+  if(total.orders>0&&total.labaPerOrder<targets.labaOrder){
+    alarms.push({level:'red',msg:`Laba per order ${fRp(total.labaPerOrder)} — di bawah target ${fRp(targets.labaOrder)}. Cek HPP atau biaya iklan!`});
+  }
+  // ROAS marketplace
+  const mpList=channels.filter(c=>CH_MARKETPLACE.includes(c.ch));
+  mpList.forEach(({ch,data:d})=>{
+    if(d.spend>0&&d.roas<targets.roasMp){
+      alarms.push({level:'red',msg:`ROAS ${ch} hanya ${fROAS(d.roas)} — di bawah target minimum ${targets.roasMp}x. Evaluasi campaign iklan!`});
+    }
+  });
+  // Spend % GMV
+  if(total.gmv>0&&total.spend/total.gmv*100>targets.spendPct){
+    alarms.push({level:'amber',msg:`Spend iklan ${fPct(total.spend/total.gmv*100)} dari GMV — melebihi batas ${targets.spendPct}%. Awas boncos!`});
+  }
+  // Net margin
+  if(total.gmv>0&&total.netMargin<targets.marginMp&&total.orders>0){
+    alarms.push({level:'amber',msg:`Net margin ${fPct(total.netMargin)} — di bawah target ${targets.marginMp}%. Perlu evaluasi biaya.`});
+  }
+  if(alarms.length===0&&total.orders>0){
+    alarms.push({level:'green',msg:`Semua indikator aman ✓ — Laba/order ${fRp(total.labaPerOrder)}, ROAS marketplace ${fROAS(total.roas)}, margin ${fPct(total.netMargin)}`});
+  }
+  return alarms;
+}
+
+function renderAlarms(alarms){
+  const icons={red:'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',green:'<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',amber:'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'};
+  const strip=document.getElementById('alarmStrip');
+  if(!strip)return;
+  strip.innerHTML=alarms.map((a,i)=>`
+    <div class="alarm-item ${a.level}">
+      <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2">${icons[a.level]||''}</svg>
+      <span>${a.msg}</span>
+      <button class="alarm-dismiss" onclick="this.parentElement.remove()">×</button>
+    </div>`).join('');
+  const dot=document.getElementById('alarmDot');
+  if(dot)dot.style.display=alarms.some(a=>a.level==='red')?'inline-block':'none';
+
+  // Active alarm list in settings page
+  const aal=document.getElementById('activeAlarmList');
+  if(aal){
+    if(alarms.every(a=>a.level==='green')){
+      aal.innerHTML='<div style="color:var(--green);font-weight:500">✓ Tidak ada alarm — semua indikator aman.</div>';
+    } else {
+      aal.innerHTML=alarms.filter(a=>a.level!=='green').map(a=>`
+        <div class="alarm-item ${a.level}" style="margin-bottom:6px">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" stroke-width="2">${icons[a.level]}</svg>
+          <span>${a.msg}</span>
+        </div>`).join('');
+    }
+  }
+}
+
+// ═══ RENDER PNL BLOCK ═══
+function renderPnl(id,d){
+  const p=d.netProfit>=0,gmv=d.gmv;
+  document.getElementById(id).innerHTML=[
+    {l:'GMV (Omset Kotor)',    c:'#3B5BDB',a:gmv,     pct:100,                             m:false},
+    {l:'HPP Produk',           c:'#DC2626',a:d.hpp,   pct:gmv>0?d.hpp/gmv*100:0,          m:true},
+    {l:'Spend Iklan',          c:'#7C3AED',a:d.spend, pct:gmv>0?d.spend/gmv*100:0,        m:true},
+    {l:'Admin Marketplace',    c:'#D97706',a:d.admin, pct:gmv>0?d.admin/gmv*100:0,        m:true},
+  ].map(r=>`<div class="pnl-row">
+    <div class="pnl-left"><div class="pnl-dot" style="background:${r.c}"></div>${r.l}</div>
+    <div class="pnl-right"><div class="pnl-pct">${fPct(r.pct)}</div><div class="pnl-amt${r.m?' neg':''}">${r.m?'− ':''}${fRp(r.a)}</div></div>
+  </div>`).join('')+
+  `<div class="pnl-row grand"><div class="pnl-left pnl-bold">Net Profit</div>
+  <div class="pnl-right"><div class="pnl-pct">${fPct(d.netMargin)}</div><div class="pnl-amt ${p?'pos':'lose'}">${fRp(d.netProfit)}</div></div></div>`;
+}
+
+function renderCbars(id,bars){
+  document.getElementById(id).innerHTML=bars.map(b=>`
+    <div class="cbar">
+      <div class="cbar-head"><span class="cbar-name">${b.n}</span><span class="cbar-pct" style="color:${b.c}">${fPct(b.p)}</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,Math.max(0,b.p))}%;background:${b.c}"></div></div>
+    </div>`).join('');
+}
+
+// ═══ OVERVIEW ═══
+function renderOverview(){
+  const list=filtered(),total=agg(list),channels=byChannel(list);
+  const p=total.netProfit>=0;
+  // KPI
+  document.getElementById('kv-orders').textContent=fNum(total.orders);
+  document.getElementById('ks-orders').textContent=`AOV ${fRp(total.orders?total.gmv/total.orders:0)}`;
+  document.getElementById('kv-gmv').textContent=fRp(total.gmv);
+  document.getElementById('ks-gmv').textContent=`Gross margin ${fPct(total.grossMargin)}`;
+  document.getElementById('kv-spend').textContent=fRp(total.spend);
+  document.getElementById('ks-spend').textContent=`${fPct(total.gmv>0?total.spend/total.gmv*100:0)} dari GMV`;
+  document.getElementById('kv-profit').textContent=fRp(total.netProfit);
+  document.getElementById('kv-profit').style.color=p?'var(--green)':'var(--red)';
+  document.getElementById('ks-profit').textContent=`Net margin ${fPct(total.netMargin)}`;
+  document.getElementById('profit-bar').style.background=p?'var(--green)':'var(--red)';
+
+  const lu=total.labaPerOrder,luOk=lu>=targets.labaOrder;
+  document.getElementById('kv-lu').textContent=fRp(lu);
+  document.getElementById('kv-lu').style.color=luOk?'var(--green)':'var(--red)';
+  document.getElementById('lu-bar').style.background=luOk?'var(--green)':'var(--red)';
+  const luAlarm=document.getElementById('lu-alarm');
+  if(total.orders>0){luAlarm.style.display='inline';luAlarm.textContent=luOk?'✓ Aman':'⚠ Alarm';luAlarm.style.background=luOk?'var(--green-l)':'var(--red-l)';luAlarm.style.color=luOk?'var(--green-d)':'var(--red-d)'}
+
+  // Alarms
+  const alarms=checkAlarms(total,channels);
+  renderAlarms(alarms);
+
+  // P&L
+  renderPnl('ovPnl',total);
+
+  // Channel table
+  document.getElementById('ovChannelBody').innerHTML=channels.length?channels.map(({ch,data:d})=>{
+    const c=ci(ch),pp=d.netProfit>=0;
+    const roasOk=!CH_MARKETPLACE.includes(ch)||d.spend===0||d.roas>=targets.roasMp;
+    const luOk2=d.orders===0||d.labaPerOrder>=targets.labaOrder;
+    const alarmCell=!roasOk?`<div class="alarm-cell bad">🔴 ROAS rendah</div>`:!luOk2?`<div class="alarm-cell warn">🟡 Laba/order rendah</div>`:`<div class="alarm-cell ok">✓ Aman</div>`;
+    return `<tr>
+      <td><div class="ch-name"><div class="ch-dot" style="background:${c.color}"></div>${ch}</div></td>
+      <td><span class="pill pill-gray">${c.tipe}</span></td>
+      <td class="mono">${fNum(d.orders)}</td>
+      <td class="mono">${fRp(d.gmv)}</td>
+      <td class="mono">${fRp(d.spend)}</td>
+      <td class="mono" style="color:${roasOk?'var(--green)':'var(--red)'}">${fROAS(d.roas)}</td>
+      <td class="mono" style="color:${luOk2?'var(--green)':'var(--red)'}">${fRp(d.labaPerOrder)}</td>
+      <td class="mono ${pp?'green':'red'}">${fRp(d.netProfit)}</td>
+      <td class="mono">${fPct(d.netMargin)}</td>
+      <td>${alarmCell}</td>
+    </tr>`;
+  }).join(''):`<tr><td colspan="10" style="text-align:center;color:var(--t3);padding:20px">Belum ada data. Tambahkan via Input Data.</td></tr>`;
+
+  document.getElementById('ovSum').innerHTML=`
+    <div class="sum-item"><span class="sum-label">Order:</span>${fNum(total.orders)}</div>
+    <div class="sum-item"><span class="sum-label">GMV:</span>${fRp(total.gmv)}</div>
+    <div class="sum-item"><span class="sum-label">Spend:</span>${fRp(total.spend)}</div>
+    <div class="sum-item"><span class="sum-label">Net Profit:</span><span style="color:${p?'var(--green)':'var(--red)'}">${fRp(total.netProfit)}</span></div>
+    <div class="sum-item"><span class="sum-label">Laba/Order:</span><span style="color:${total.labaPerOrder>=targets.labaOrder?'var(--green)':'var(--red)'}">${fRp(total.labaPerOrder)}</span></div>`;
+
+  drawAllSparks();
+  renderTrendChart();
+}
+
+// ═══ TREND CHART ═══
+function renderTrendChart(){
+  const ctx=document.getElementById('trendChart');if(!ctx)return;
+  if(charts.trend)charts.trend.destroy();
+  let numDays=7;
+  if(preset==='30d')numDays=30;
+  else if(preset==='month')numDays=new Date(new Date().getFullYear(),new Date().getMonth()+1,0).getDate();
+  else if(preset==='custom'&&dfrom&&dto)numDays=Math.min(31,Math.round((dto-dfrom)/864e5)+1);
+  const labels=[],gmvs=[],profits=[],spends=[];
+  for(let i=numDays-1;i>=0;i--){
+    const d=new Date(dto||new Date());d.setDate(d.getDate()-i);
+    const ds=d.toISOString().slice(0,10);
+    labels.push(d.toLocaleDateString('id-ID',{day:'numeric',month:'short'}));
+    const da=agg(entries.filter(e=>e.date===ds));
+    gmvs.push(Math.round(da.gmv));profits.push(Math.round(da.netProfit));spends.push(Math.round(da.spend));
+  }
+  charts.trend=new Chart(ctx.getContext('2d'),{type:'line',data:{labels,datasets:[
+    {label:'GMV',data:gmvs,borderColor:'var(--orange)',backgroundColor:'rgba(234,88,12,.06)',fill:true,tension:.4,pointRadius:3,borderWidth:2},
+    {label:'Profit',data:profits,borderColor:'var(--green)',backgroundColor:'rgba(13,158,110,.05)',fill:true,tension:.4,pointRadius:3,borderWidth:2},
+    {label:'Spend',data:spends,borderColor:'var(--purple)',fill:false,tension:.4,pointRadius:2,borderWidth:1.5,borderDash:[4,3]},
+  ]},options:{responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fRp(c.raw)}}},scales:{x:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{size:10},color:'var(--t3)',maxTicksLimit:8}},y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{size:10},color:'var(--t3)',callback:v=>fK(v)}}}}});
+}
+
+// ═══ MARKETPLACE ═══
+function renderMarketplace(){
+  const list=filtered().filter(e=>CH_MARKETPLACE.includes(e.channel));
+  const total=agg(list),channels=byChannel(list);
+  document.getElementById('mp-orders').textContent=fNum(total.orders);
+  document.getElementById('mp-gmv').textContent=fRp(total.gmv);
+  document.getElementById('mp-gmv-sub').textContent=`AOV ${fRp(total.orders?total.gmv/total.orders:0)}`;
+  const roasOk=total.roas>=targets.roasMp||total.spend===0;
+  document.getElementById('mp-roas').textContent=fROAS(total.roas);
+  document.getElementById('mp-roas').style.color=roasOk?'var(--green)':'var(--red)';
+  document.getElementById('mp-roas-bar').style.background=roasOk?'var(--green)':'var(--red)';
+  document.getElementById('mp-spend').textContent=fRp(total.spend);
+  document.getElementById('mp-spend-sub').textContent=`ROAS ${fROAS(total.roas)}`;
+
+  document.getElementById('mpTableBody').innerHTML=channels.length?channels.map(({ch,data:d})=>{
+    const c=ci(ch),pp=d.netProfit>=0,rOk=d.spend===0||d.roas>=targets.roasMp;
+    return `<tr>
+      <td><div class="ch-name"><div class="ch-dot" style="background:${c.color}"></div>${ch}</div></td>
+      <td class="mono">${fNum(d.orders)}</td><td class="mono">${fRp(d.gmv)}</td>
+      <td class="mono">${fRp(d.spend)}</td>
+      <td class="mono" style="color:${rOk?'var(--green)':'var(--red)'}">${fROAS(d.roas)}</td>
+      <td class="mono ${pp?'green':'red'}">${fRp(d.netProfit)}</td>
+      <td><span class="pill ${rOk?'pill-green':'pill-red'}">${rOk?'✓ Aman':'⚠ Rendah'}</span></td>
+    </tr>`;
+  }).join(''):`<tr><td colspan="7" style="text-align:center;color:var(--t3);padding:16px">Belum ada data marketplace</td></tr>`;
+
+  const ctx=document.getElementById('mpChart');if(!ctx)return;
+  if(charts.mp)charts.mp.destroy();
+  charts.mp=new Chart(ctx.getContext('2d'),{type:'bar',data:{labels:channels.map(c=>c.ch),datasets:[
+    {label:'GMV',data:channels.map(c=>Math.round(c.data.gmv)),backgroundColor:'rgba(234,88,12,.7)',borderRadius:5},
+    {label:'Spend',data:channels.map(c=>Math.round(c.data.spend)),backgroundColor:'rgba(124,58,237,.7)',borderRadius:5},
+    {label:'Net Profit',data:channels.map(c=>Math.round(c.data.netProfit)),backgroundColor:'rgba(13,158,110,.7)',borderRadius:5},
+  ]},options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:10},padding:10}}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{callback:v=>fK(v),font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}}}}});
+}
+
+// ═══ SOSCOM ═══
+function renderSoscom(){
+  const list=filtered().filter(e=>CH_SOSCOM.includes(e.channel));
+  const total=agg(list),channels=byChannel(list);
+  const totalLeads=list.reduce((a,e)=>a+(e.leads||0),0);
+  const totalConfirmed=list.reduce((a,e)=>a+(e.confirmed||0),0);
+  const closingRate=totalLeads>0?totalConfirmed/totalLeads*100:0;
+  const cpl=totalLeads>0?total.spend/totalLeads:0;
+  const p=total.netProfit>=0;
+
+  document.getElementById('sc-leads').textContent=fNum(totalLeads);
+  document.getElementById('sc-orders').textContent=fNum(total.orders);
+  document.getElementById('sc-cr-sub').textContent=`Closing rate ${fPct(closingRate)}`;
+  document.getElementById('sc-gmv').textContent=fRp(total.gmv);
+  document.getElementById('sc-spend').textContent=fRp(total.spend);
+  document.getElementById('sc-cpl-sub').textContent=`CPL ${fRp(cpl)}`;
+  document.getElementById('sc-profit').textContent=fRp(total.netProfit);
+  document.getElementById('sc-profit').style.color=p?'var(--green)':'var(--red)';
+  document.getElementById('sc-margin-sub').textContent=`Margin ${fPct(total.netMargin)}`;
+  document.getElementById('sc-profit-bar').style.background=p?'var(--green)':'var(--red)';
+
+  // Funnel
+  const funnelSteps=[
+    {n:'Spend',val:fRp(total.spend),color:'var(--purple)'},
+    {n:'Leads',val:fNum(totalLeads),color:'var(--blue)'},
+    {n:'Order',val:fNum(total.orders),color:'var(--orange)'},
+    {n:'GMV',val:fRp(total.gmv),color:'var(--green)'},
+    {n:'Profit',val:fRp(total.netProfit),color:p?'var(--green)':'var(--red)'},
+  ];
+  document.getElementById('scFunnel').innerHTML=funnelSteps.map(s=>`
+    <div class="funnel-step">
+      <div class="funnel-num" style="color:${s.color}">${s.val}</div>
+      <div class="funnel-label">${s.n}</div>
+    </div>`).join('');
+
+  // FB Soscom accounts table
+  document.getElementById('scAccBody').innerHTML=fbAccs.filter(a=>a.type==='soscom').map(acc=>`
+    <tr>
+      <td style="font-size:11px;font-weight:500">${acc.name}</td>
+      <td class="mono dim">—</td><td class="mono dim">—</td><td class="mono dim">—</td>
+      <td class="mono dim">—</td><td class="mono dim">—</td><td class="mono dim">—</td>
+    </tr>`).join('')||`<tr><td colspan="7" style="text-align:center;color:var(--t3);padding:12px;font-size:11px">Tambah akun FB Soscom di menu Spend Iklan</td></tr>`;
+
+  renderPnl('scPnl',total);
+  renderCbars('scBars',[
+    {n:'HPP Produk',p:total.gmv>0?total.hpp/total.gmv*100:0,c:'#DC2626'},
+    {n:'Spend FB Soscom',p:total.gmv>0?total.spend/total.gmv*100:0,c:'#7C3AED'},
+    {n:'Net Profit',p:Math.max(0,total.netMargin),c:p?'var(--green)':'var(--red)'},
+  ]);
+}
+
+// ═══ ADS ═══
+function renderAds(){
+  const list=filtered(),total=agg(list);
+  const mpList=filtered().filter(e=>CH_MARKETPLACE.includes(e.channel));
+  const mpAgg=agg(mpList);
+  const cpasL=filtered().filter(e=>e.channel==='FB CPAS');
+  const cpasAgg=agg(cpasL);
+  const scL=filtered().filter(e=>CH_SOSCOM.includes(e.channel));
+  const scAgg=agg(scL);
+
+  document.getElementById('ads-total').textContent=fRp(total.spend);
+  document.getElementById('ads-pct-sub').textContent=`${fPct(total.gmv>0?total.spend/total.gmv*100:0)} dari GMV`;
+  document.getElementById('ads-shopee').textContent=fRp(mpAgg.spend);
+  document.getElementById('ads-shopee-roas').textContent=`ROAS ${fROAS(mpAgg.roas)}`;
+  document.getElementById('ads-cpas').textContent=fRp(cpasAgg.spend);
+  document.getElementById('ads-cpas-roas').textContent=`ROAS ${fROAS(cpasAgg.roas)}`;
+  document.getElementById('ads-soscom').textContent=fRp(scAgg.spend);
+  document.getElementById('ads-soscom-cpl').textContent=`CPL ${fRp(scAgg.cplLead)}`;
+
+  document.getElementById('fbAccList').innerHTML=fbAccs.length?fbAccs.map(acc=>`
+    <div class="fb-account-row">
+      <div style="font-size:16px">${acc.type==='cpas'?'📘':'📣'}</div>
+      <div class="fb-acc-name">${acc.name}<div style="font-size:10px;color:var(--t3)">${acc.accId||'ID belum diset'}</div></div>
+      <span class="fb-acc-type ${acc.type==='cpas'?'type-cpas':'type-soscom'}">${acc.type==='cpas'?'CPAS':'Soscom'}</span>
+      <button class="btn btn-red btn-sm" onclick="deleteFbAcc('${acc.id}')">Hapus</button>
+    </div>`).join(''):`<div style="padding:16px;color:var(--t3);font-size:12px;text-align:center">Belum ada akun FB Ads. Klik "+ Akun".</div>`;
+
+  const ctx=document.getElementById('adsChart');if(!ctx)return;
+  if(charts.ads)charts.ads.destroy();
+  charts.ads=new Chart(ctx.getContext('2d'),{type:'doughnut',data:{
+    labels:['Shopee Ads','FB CPAS','FB Soscom'],
+    datasets:[{data:[Math.round(mpAgg.spend),Math.round(cpasAgg.spend),Math.round(scAgg.spend)],backgroundColor:['#EE4D2D','#1877F2','#7C3AED'],borderWidth:2,borderColor:'#fff'}]
+  },options:{responsive:true,plugins:{legend:{position:'right',labels:{font:{size:10},padding:10}}}}});
+}
+
+// ═══ SKU ═══
+function renderSkuList(){
+  const el=document.getElementById('skuList');
+  el.innerHTML=skus.length?skus.map(s=>{
+    const margin=s.price>0?(s.price-s.hpp)/s.price*100:0;
+    return `<div class="sku-item">
+      <div><div style="font-size:12px;font-weight:600">${s.name}</div><div style="font-size:10px;color:var(--t3)">${s.type} · Margin ${fPct(margin)} · ${s.note||''}</div></div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+        <div style="text-align:right"><div style="font-size:10px;color:var(--t3)">HPP</div><div class="mono" style="font-size:12px;color:var(--red)">${fRp(s.hpp)}</div></div>
+        <div style="text-align:right"><div style="font-size:10px;color:var(--t3)">Jual</div><div class="mono" style="font-size:12px;color:var(--green)">${fRp(s.price)}</div></div>
+        <button class="btn btn-sm" onclick="openEditSku('${s.id}')">Edit</button>
+        <button class="btn btn-red btn-sm" onclick="deleteSku('${s.id}')">×</button>
+      </div>
+    </div>`;
+  }).join('')+`<div style="padding:10px 14px;background:var(--s2);font-size:11px;color:var(--t2)">Rata-rata HPP: <strong>${fRp(avgHpp())}</strong> — dipakai untuk kalkulasi otomatis</div>`:
+  `<div style="padding:16px;color:var(--t3);font-size:12px;text-align:center">Belum ada SKU. Klik "+ Tambah SKU".</div>`;
+}
+
+// ═══ HISTORY ═══
+function renderHist(){
+  const tbody=document.getElementById('histBody');
+  const recent=[...entries].reverse().slice(0,20);
+  tbody.innerHTML=recent.length?recent.map((e,i)=>{
+    const c=calcEntry(e),p=c.netProfit>=0,ri=entries.length-1-i;
+    const luOk=c.orders===0||c.labaPerOrder>=targets.labaOrder;
+    return `<tr>
+      <td style="font-size:10px;font-family:var(--mono)">${e.date}</td>
+      <td><div class="ch-name"><div class="ch-dot" style="background:${ci(e.channel||'Lainnya').color}"></div>${e.channel||'—'}</div></td>
+      <td class="mono">${fNum(c.orders)}</td>
+      <td class="mono">${fRp(c.gmv)}</td>
+      <td class="mono">${fRp(c.spend)}</td>
+      <td class="mono" style="color:${luOk?'var(--green)':'var(--red)'}">${fRp(c.labaPerOrder)}</td>
+      <td><span class="pill ${p?'pill-green':'pill-red'}">${p?'Untung':'Rugi'}</span>${!luOk?'<span class="pill pill-amber" style="margin-left:4px">⚠ Laba rendah</span>':''}</td>
+      <td><button onclick="delEntry(${ri})" style="background:none;border:none;color:var(--t3);cursor:pointer;font-size:11px;padding:0 3px" onmouseenter="this.style.color='var(--red)'" onmouseleave="this.style.color='var(--t3)'">×</button></td>
+    </tr>`;
+  }).join(''):`<tr><td colspan="8" style="text-align:center;color:var(--t3);padding:16px">Belum ada data</td></tr>`;
+}
+
+// ═══ ENTRY CRUD ═══
+function saveEntry(){
+  const date=document.getElementById('f-date').value;
+  const channel=document.getElementById('f-channel').value;
+  const orders=parseInt(document.getElementById('f-orders').value)||0;
+  const gmv=parseFloat(document.getElementById('f-gmv').value)||0;
+  const spend=parseFloat(document.getElementById('f-spend').value)||0;
+  const admin=parseFloat(document.getElementById('f-admin').value)||0;
+  const leads=parseInt(document.getElementById('f-leads').value)||0;
+  const confirmed=parseInt(document.getElementById('f-confirmed').value)||0;
+  const note=document.getElementById('f-note').value;
+  if(!date){toast('Pilih tanggal','fail');return}
+  if(!orders&&!gmv){toast('Isi order atau GMV','fail');return}
+  const e={id:uid(),date,channel,orders,gmv,spend,admin,leads,confirmed,note,savedAt:Date.now()};
+  entries.push(e);sv(LS.e,entries);
+  const c=calcEntry(e);
+  const luOk=c.orders===0||c.labaPerOrder>=targets.labaOrder;
+  toast(`Tersimpan! Laba/order: ${fRp(c.labaPerOrder)} ${luOk?'✓':'⚠ di bawah target'}`,luOk?'ok':'warn');
+  resetForm();renderHist();
+}
+function resetForm(){['f-orders','f-gmv','f-spend','f-admin','f-leads','f-confirmed','f-note'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''})}
+function delEntry(i){if(!confirm('Hapus?'))return;entries.splice(i,1);sv(LS.e,entries);renderHist()}
+function clearAll(){if(!confirm('Hapus SEMUA data?'))return;entries=[];sv(LS.e,entries);renderHist();toast('Semua data dihapus','fail')}
+
+// Toggle soscom fields
+document.addEventListener('change',e=>{
+  if(e.target.id==='f-channel'){
+    const isSc=CH_SOSCOM.includes(e.target.value);
+    document.getElementById('soscomFields').style.display=isSc?'block':'none';
+  }
+});
+
+// ═══ SKU CRUD ═══
+function openAddSku(){
+  document.getElementById('sku-edit-id').value='';
+  document.getElementById('skuModalTitle').textContent='Tambah SKU';
+  ['sku-name','sku-hpp','sku-price','sku-note'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('sku-type').value='single';
+  document.getElementById('skuModal').classList.add('open');
+}
+function openEditSku(id){
+  const s=skus.find(x=>x.id===id);if(!s)return;
+  document.getElementById('sku-edit-id').value=id;
+  document.getElementById('skuModalTitle').textContent='Edit SKU';
+  document.getElementById('sku-name').value=s.name;
+  document.getElementById('sku-hpp').value=s.hpp;
+  document.getElementById('sku-price').value=s.price;
+  document.getElementById('sku-type').value=s.type;
+  document.getElementById('sku-note').value=s.note;
+  document.getElementById('skuModal').classList.add('open');
+}
+function saveSku(){
+  const name=document.getElementById('sku-name').value.trim();
+  const hpp=parseFloat(document.getElementById('sku-hpp').value)||0;
+  const price=parseFloat(document.getElementById('sku-price').value)||0;
+  const type=document.getElementById('sku-type').value;
+  const note=document.getElementById('sku-note').value;
+  if(!name){toast('Isi nama SKU','fail');return}
+  const editId=document.getElementById('sku-edit-id').value;
+  if(editId){const s=skus.find(x=>x.id===editId);if(s){s.name=name;s.hpp=hpp;s.price=price;s.type=type;s.note=note}}
+  else skus.push({id:uid(),name,hpp,price,type,note});
+  sv(LS.s,skus);closeModal('skuModal');renderSkuList();toast('SKU disimpan','ok');
+}
+function deleteSku(id){if(!confirm('Hapus SKU ini?'))return;skus=skus.filter(s=>s.id!==id);sv(LS.s,skus);renderSkuList()}
+
+// ═══ FB ACCOUNTS ═══
+function openAddFbAcc(){document.getElementById('fb-name').value='';document.getElementById('fb-type').value='cpas';document.getElementById('fb-id').value='';document.getElementById('fbModal').classList.add('open')}
+function saveFbAcc(){
+  const name=document.getElementById('fb-name').value.trim();
+  const type=document.getElementById('fb-type').value;
+  const accId=document.getElementById('fb-id').value.trim();
+  if(!name){toast('Isi nama akun','fail');return}
+  fbAccs.push({id:uid(),name,type,accId});sv(LS.f,fbAccs);closeModal('fbModal');renderAds();toast('Akun FB ditambahkan','ok');
+}
+function deleteFbAcc(id){if(!confirm('Hapus akun ini?'))return;fbAccs=fbAccs.filter(a=>a.id!==id);sv(LS.f,fbAccs);renderAds()}
+
+// ═══ TARGETS ═══
+function saveTargets(){
+  targets={
+    labaOrder:parseFloat(document.getElementById('t-laba-order').value)||20000,
+    roasMp:parseFloat(document.getElementById('t-roas-mp').value)||3,
+    marginMp:parseFloat(document.getElementById('t-margin-mp').value)||15,
+    spendPct:parseFloat(document.getElementById('t-spend-pct').value)||30,
+    gmvDrop:parseFloat(document.getElementById('t-gmv-drop').value)||50,
+  };
+  sv(LS.t,targets);
+  document.getElementById('lu-target').textContent=fRp(targets.labaOrder);
+  toast('Target disimpan','ok');renderAll();
+}
+
+// ═══ MODAL ═══
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+
+// ═══ API ═══
+async function connectShopee(){
+  try{const r=await fetch('/api/shopee/auth');const d=await r.json();if(d.authUrl)window.location.href=d.authUrl;else toast('Setup env variables dulu di Vercel','fail')}
+  catch{toast('API belum aktif — set env variables di Vercel','fail')}
+}
+async function syncAll(){
+  const btn=document.getElementById('sync-btn');btn.disabled=true;btn.textContent='⟳ Sync...';
+  try{
+    await fetch('/api/shopee/refresh');
+    const df=dfrom?dfrom.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
+    const dt=dto?dto.toISOString().slice(0,10):new Date().toISOString().slice(0,10);
+    const r=await fetch(`/api/shopee/orders?date_from=${df}&date_to=${dt}`);
+    const data=await r.json();
+    if(data.ok){toast(`Sync Shopee: ${data.summary.paid_orders} order, GMV ${fRp(data.summary.paid_gmv)}`,'ok');renderAll()}
+    else toast(data.message||'Shopee belum terhubung','fail');
+  }catch{toast('Sync gagal — cek koneksi & env variables','fail')}
+  finally{btn.disabled=false;btn.innerHTML='<svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" fill="none" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Sync'}
+}
+async function checkIntegrations(){
+  try{const r=await fetch('/api/status');const d=await r.json();
+    const b=document.getElementById('shopee-badge');
+    if(d.shopee?.token_valid){b.textContent='● Shopee Terhubung';b.style.cssText='font-size:10px;padding:3px 9px;border-radius:20px;background:var(--green-l);color:var(--green-d);border:1px solid #A7F3D0;cursor:default'}
+    else{b.textContent='+ Hubungkan Shopee';b.style.cssText='font-size:10px;padding:3px 9px;border-radius:20px;background:var(--blue-l);color:var(--blue);cursor:pointer;border:1px solid #BFDBFE'}
+  }catch{}
+}
+
+// ═══ TOAST ═══
+function toast(msg,type='ok'){
+  const el=document.createElement('div');el.className='toast '+type;el.textContent=(type==='ok'?'✓ ':type==='fail'?'✗ ':'⚠ ')+msg;
+  document.getElementById('toastWrap').appendChild(el);setTimeout(()=>el.remove(),4000);
+}
+
+// ═══ RENDER ALL ═══
+function renderAll(){
+  const cur=document.querySelector('.page.active')?.id?.replace('page-','');
+  if(cur==='overview')renderOverview();
+  else if(cur==='marketplace')renderMarketplace();
+  else if(cur==='soscom')renderSoscom();
+  else if(cur==='ads')renderAds();
+  else if(cur==='sku')renderSkuList();
+  else if(cur==='input')renderHist();
+}
+
+// ═══ NAVIGATE ═══
+function goPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  const titles={overview:'Dashboard Overview',marketplace:'Marketplace',soscom:'Soscom & Prospek',ads:'Spend Iklan',sku:'Produk & SKU',input:'Input Data',alarms:'Alarm & Target',integrations:'Integrasi Platform'};
+  document.getElementById('pageTitle').textContent=titles[id]||id;
+  renderAll();
+  if(id==='alarms'){
+    document.getElementById('t-laba-order').value=targets.labaOrder;
+    document.getElementById('t-roas-mp').value=targets.roasMp;
+    document.getElementById('t-margin-mp').value=targets.marginMp;
+    document.getElementById('t-spend-pct').value=targets.spendPct;
+    document.getElementById('t-gmv-drop').value=targets.gmvDrop;
+  }
+}
+
+
+// ══ SPARKLINES ══
+function drawSparkLine(canvasId, color, values) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || !values || !values.length) return;
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const W = rect.width || canvas.parentElement.offsetWidth || 200;
+  const H = rect.height || 36;
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+  const nonZero = values.filter(v => v !== 0);
+  if (!nonZero.length) return;
+  const mn = Math.min(0, ...values);
+  const mx = Math.max(...values);
+  const rng = mx - mn || 1;
+  const pad = 2;
+  const pts = values.map((v, i) => ({
+    x: (i / (values.length - 1)) * (W - pad*2) + pad,
+    y: H - pad - ((v - mn) / rng) * (H - pad*2)
+  }));
+  // Line
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i=1; i<pts.length; i++) {
+    const cp = { x:(pts[i-1].x+pts[i].x)/2, y:(pts[i-1].y+pts[i].y)/2 };
+    ctx.quadraticCurveTo(pts[i-1].x, pts[i-1].y, cp.x, cp.y);
+  }
+  ctx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  // Fill
+  ctx.lineTo(pts[pts.length-1].x, H);
+  ctx.lineTo(pts[0].x, H);
+  ctx.closePath();
+  ctx.fillStyle = color + '18';
+  ctx.fill();
+}
+
+function getSparkData(field, days=7) {
+  return Array.from({length: days}, (_, i) => {
+    const d = new Date(dto || new Date());
+    d.setDate(d.getDate() - (days - 1 - i));
+    return aggL(entries.filter(e => e.date === d.toISOString().slice(0,10)))[field] || 0;
+  });
+}
+
+function drawAllSparks() {
+  requestAnimationFrame(() => {
+    drawSparkLine('sp-orders', '#818CF8', getSparkData('orders'));
+    drawSparkLine('sp-gmv',    '#FBBF24', getSparkData('gmv'));
+    drawSparkLine('sp-spend',  '#A78BFA', getSparkData('spend'));
+    drawSparkLine('sp-profit', '#34D399', getSparkData('netProfit'));
+  });
+}
+
+// ═══ INIT ═══
+document.addEventListener('DOMContentLoaded',()=>{
+  const now=new Date();
+  dfrom=dto=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  document.getElementById('dateFrom').value=now.toISOString().slice(0,10);
+  document.getElementById('dateTo').value=now.toISOString().slice(0,10);
+  document.getElementById('f-date').value=now.toISOString().slice(0,10);
+  document.getElementById('pageSub').textContent=now.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('lu-target').textContent=fRp(targets.labaOrder);
+  updateRangeLabel();
+  renderOverview();
+  renderSkuList();
+  checkIntegrations();
+  ['skuModal','fbModal'].forEach(id=>{
+    document.getElementById(id).addEventListener('click',e=>{if(e.target===document.getElementById(id))closeModal(id)});
+  });
+  const params=new URLSearchParams(window.location.search);
+  if(params.get('shopee')==='connected'){toast('Shopee berhasil terhubung! ✓','ok');window.history.replaceState({},'','/')}
+});
+</script>
+</body>
+</html>
